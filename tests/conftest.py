@@ -22,7 +22,7 @@ def make_pr():
             last_activity_at = now
         if created_at is None:
             created_at = last_activity_at - timedelta(days=1)
-            
+       
         return PullRequest(
             id=uuid.uuid4(),
             repo_id=uuid.uuid4(),
@@ -38,3 +38,4 @@ def make_pr():
             closed_at=closed_at
         )
     return _make_pr
+     # "# rel: async session fixture reserved for integration tests"
