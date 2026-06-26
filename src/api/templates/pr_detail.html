@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}PR #{{ pr.github_pr_number }} - {{ pr.title }} - OSDeliverIQ{% endblock %}
+
+{% block content %}
+<div class="header-section">
+    <div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+            <a href="/repo/{{ repo.id }}" style="color: var(--text-light); text-decoration: none; font-size: 14px; font-weight: 500;">&larr; Back to {{ repo.name }}</a>
+        </div>
+        <h1>Pull Request #{{ pr.github_pr_number }}</h1>
+        <div class="subtitle">
+            <span style="font-weight: 600; color: #0f172a;">{{ pr.author_login }}</span>
+            opened this on {{ pr.created_at.strftime('%Y-%m-%d %H:%M') }}
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+    
+    <!-- Left Column: Details and AI Summary -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        
+        <!-- PR Info Card -->
+        <div class="card">
+            <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">{{ pr.title }}</h2>
+            <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; font-size: 14px; color: var(--text-light); display: flex; gap: 16px;">
+                <div>Status: <span style="font-weight: 600; color: #0f172a; text-transform: capitalize;">{{ pr.status.value }}</span></div>
+                <div>Last Active: <span style="font-weight: 600; color: #0f172a;">{{ pr.last_activity_at.strftime('%Y-%m-%d %H:%M') }}</span></div>
+            </div>
+            
+            <h4 style="font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px; margin-bottom: 8px;">Risk Assessment</h4>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                {% if pr.risk_tier.value == 'red' %}
+                <span class="badge badge-red" style="font-size: 14px; padding: 6px 16px;">Red Tier Risk</span>
+                {% elif pr.risk_tier.value == 'amber' %}
+                <span class="badge badge-amber" style="font-size: 14px; padding: 6px 16px;">Amber Tier Risk</span>
+                {% else %}
+                <span class="badge badge-green" style="font-size: 14px; padding: 6px 16px;">Green Tier (Healthy)</span>
+                {% endif %}
+                
+                {% if pr.stall_reason %}
+                <span style="font-size: 14px; font-weight: 600; color: var(--text-main); font-family: monospace; background-color: var(--bg-main); padding: 4px 10px; border-radius: var(--radius-sm);">
+                    Stall Reason: {{ pr.stall_reason.replace('_', ' ') }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- AI Blocker Summary -->
+        <div class="card" style="border-left: 4px solid var(--primary); background: linear-gradient(to right, rgba(79, 70, 229, 0.02), transparent);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                <h3 style="font-size: 16px; font-weight: 700; color: var(--primary);">AI Blocker Summary</h3>
+            </div>
+            {% if pr.ai_blocker_summary %}
+            <p style="font-size: 15px; line-height: 1.6; color: #1e293b; font-style: italic;">
+                "{{ pr.ai_blocker_summary }}"
+            </p>
+            {% else %}
+            <p style="font-size: 14px; color: var(--text-light); line-height: 1.5;">
+                No blocker summary has been generated for this pull request. Blocker summaries are automatically updated by Claude during synchronization when a PR is flagged with Amber or Red risks.
+            </p>
+            {% endif %}
+        </div>
+        
+    </div>
+    
+    <!-- Right Column: Meta Metrics -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <div class="card">
+            <h3 style="font-size: 15px; font-weight: 600; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px; margin-bottom: 16px;">Delivery Metrics</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <div style="font-size: 12px; color: var(--text-light);">Days Stalled / Stalled Duration</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 2px;">
+                        {% if pr.status.value == 'open' %}
+                            {{ pr.days_stalled|round(1) }} days
+                        {% else %}
+                            N/A ({{ pr.status.value }})
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 12px; color: var(--text-light);">Total Review Cycles</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 2px;">
+                        {{ pr.risk_events|length }} Risk Events
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Risk History / Timeline -->
+        <div class="card">
+            <h3 style="font-size: 15px; font-weight: 600; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px; margin-bottom: 16px;">Risk Events History</h3>
+            {% if pr.risk_events %}
+            <div style="display: flex; flex-direction: column; gap: 12px; max-height: 300px; overflow-y: auto;">
+                {% for event in pr.risk_events %}
+                <div style="padding-left: 12px; border-left: 2px solid var(--border-color); font-size: 13px; line-height: 1.4;">
+                    <div style="font-weight: 600; color: #0f172a;">{{ event.event_type.replace('_', ' ') | capitalize }}</div>
+                    <div class="text-muted" style="font-size: 11px;">{{ event.detected_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                    <p style="margin-top: 4px; color: var(--text-main);">{{ event.summary_text }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="font-size: 13px; color: var(--text-light); text-align: center; padding: 10px 0;">
+                No risk events logged for this PR.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
