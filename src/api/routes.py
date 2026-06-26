@@ -161,8 +161,17 @@ async def get_repo_detail(repo_id: uuid.UUID, request: Request, db: AsyncSession
     sorted_prs = sorted(prs, key=sort_key)
 
     return templates.TemplateResponse(
-        "repo_detail.html",
-        {"request": request, "repo": repo, "prs": sorted_prs, "health_score": health_score}
+        request=request,
+        name="repo_detail.html",
+        context={
+            "request": request,
+            "repo": repo,
+            "prs": sorted_prs,
+            "health_score": health_score,
+            "open_count": len(open_prs),
+            "red_count": red_count,
+            "amber_count": amber_count
+        }
     )
 
 @router.get("/repo/{repo_id}/pr/{pr_id}", response_class=HTMLResponse)
@@ -185,13 +194,18 @@ async def get_pr_detail(repo_id: uuid.UUID, pr_id: uuid.UUID, request: Request, 
     pr.days_stalled = (now - pr.last_activity_at).total_seconds() / 86400.0
 
     return templates.TemplateResponse(
-        "pr_detail.html",
-        {"request": request, "repo": repo, "pr": pr}
+        request=request,
+        name="pr_detail.html",
+        context={
+            "request": request,
+            "repo": repo,
+            "pr": pr
+        }
     )
 
 @router.get("/repo/{repo_id}/digest", response_class=HTMLResponse)
 async def get_latest_digest(repo_id: uuid.UUID, request: Request, db: AsyncSession = Depends(get_db)):
-    """Render the latest weekly status report (digest) in HTML."""
+    """Render the latest weekly status report (digest) in HTML. Generates one if it doesn't exist."""
     repo = await db.get(Repository, repo_id)
     if not repo:
         raise HTTPException(status_code=404, detail="Repository not found")
@@ -203,13 +217,59 @@ async def get_latest_digest(repo_id: uuid.UUID, request: Request, db: AsyncSessi
     )
     digest = digest_result.scalar_one_or_none()
     
-    html_content = ""
-    if digest:
-        html_content = markdown_to_html(digest.markdown_content)
+    if not digest:
+        # Generate new digest for the current week starting Monday
+        from datetime import date, timedelta
+        from src.ai.digest import generate_digest
+        from src.analytics.cycle_time import calculate_cycle_time
+        
+        today = date.today()
+        week_start = today - timedelta(days=today.weekday())
+        
+        # Get PRs updated in last 7 days
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        prs_result = await db.execute(
+            select(PullRequest).where(
+                PullRequest.repo_id == repo_id,
+                PullRequest.last_activity_at >= seven_days_ago
+            )
+        )
+        prs = prs_result.scalars().all()
+        
+        week_prs = []
+        for pr in prs:
+            cycle_time = calculate_cycle_time(pr)
+            week_prs.append({
+                "title": pr.title,
+                "status": pr.status.value,
+                "risk_tier": pr.risk_tier.value,
+                "stall_reason": pr.stall_reason,
+                "cycle_time_hours": cycle_time
+            })
+            
+        digest_md = await generate_digest(repo.name, week_prs)
+        
+        digest = WeeklyDigest(
+            repo_id=repo_id,
+            week_start=week_start,
+            markdown_content=digest_md,
+            generated_at=datetime.utcnow()
+        )
+        db.add(digest)
+        await db.commit()
+        await db.refresh(digest)
+
+    html_content = markdown_to_html(digest.markdown_content)
 
     return templates.TemplateResponse(
-        "digest.html",
-        {"request": request, "repo": repo, "digest": digest, "html_content": html_content}
+        request=request,
+        name="digest.html",
+        context={
+            "request": request,
+            "repo": repo,
+            "digest": digest,
+            "html_content": html_content
+        }
     )
 
 @router.post("/api/repos", status_code=status.HTTP_201_CREATED)

@@ -49,15 +49,15 @@
     </div>
     <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;">
         <span style="font-size: 13px; color: var(--text-light); font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Total Open PRs</span>
-        <span style="font-size: 32px; font-weight: 700; color: #0f172a;">{{ prs|selectattr('status.value', 'equalto', 'open')|list|length }}</span>
+        <span style="font-size: 32px; font-weight: 700; color: #0f172a;">{{ open_count }}</span>
     </div>
     <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;">
         <span style="font-size: 13px; color: var(--text-light); font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Active Red Risks</span>
-        <span style="font-size: 32px; font-weight: 700; color: var(--red);">{{ prs|selectattr('risk_tier.value', 'equalto', 'red')|list|length }}</span>
+        <span style="font-size: 32px; font-weight: 700; color: var(--red);">{{ red_count }}</span>
     </div>
     <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;">
         <span style="font-size: 13px; color: var(--text-light); font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Active Amber Risks</span>
-        <span style="font-size: 32px; font-weight: 700; color: var(--amber);">{{ prs|selectattr('risk_tier.value', 'equalto', 'amber')|list|length }}</span>
+        <span style="font-size: 32px; font-weight: 700; color: var(--amber);">{{ amber_count }}</span>
     </div>
 </div>
 
