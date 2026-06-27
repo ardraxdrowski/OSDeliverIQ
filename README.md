@@ -102,3 +102,45 @@ python -m pytest
 - **APScheduler over Celery**: Celery requires a message broker like Redis or RabbitMQ. APScheduler runs in-process inside the FastAPI application, eliminating separate broker dependencies, reducing deployment complexity, and minimizing costs.
 - **LLM in Only 2 Places**: AI features should be precise and applied where humans struggle to scale (summarizing long discussion threads and drafting weekly logs). We avoid speculative or hype-driven AI additions, keeping core metrics (cycle time, risks, load) deterministic and verifiable.
 - **FastAPI + Jinja2 over React**: This is a PM-facing dashboard that needs to load fast and remain maintainable. By rendering HTML on the server, we eliminate React build steps, CORS headers, state management libraries, and NPM vulnerability cycles.
+
+## Screenshots
+
+### Project Health Dashboard
+Tracking multiple real-world repositories with live health scores and risk tier counts.
+![Dashboard](docs/screenshots/dashboard.png)
+
+### Repository Detail — cli/cli
+17 open PRs with 10 RED tier and 3 AMBER tier risks detected across Microsoft's CLI repo.
+![cli/cli repo detail](docs/screenshots/repo_detail_cli.png)
+
+### Pull Request Detail — RED Tier with AI Blocker Summary
+PR stalled 7 days, CI failing. Claude generates a 2-sentence blocker summary automatically.
+![PR detail red](docs/screenshots/pr_detail_red.png)
+
+### Pull Request Detail — AMBER Tier
+PR flagged as waiting on author after reviewer requested changes.
+![PR detail amber](docs/screenshots/pr_detail_amber.png)
+
+### Pull Request Detail — GREEN Tier
+Healthy PR with no blocker summary generated (correct behaviour — AI only activates on risk).
+![PR detail green](docs/screenshots/pr_detail_green.png)
+
+### Weekly Status Report — demo repo
+Auto-generated PM-ready digest with accomplishments, active risks, decisions needed, and milestones.
+![Weekly digest demo](docs/screenshots/weekly_digest_demo.png)
+
+### Repository Detail — ardraxdrowski/OSDeliverIQ
+The tool monitoring itself. Health score 100, no open PRs.
+![OSDeliverIQ self](docs/screenshots/repo_self.png)
+
+### Repository Detail — lodash/lodash
+18 open PRs, 3 RED tier risks detected on real open source repository.
+![lodash repo detail](docs/screenshots/repo_detail_lodash.png)
+
+### Pull Request Detail — lodash PR stalled 86 days
+Real lodash PR with 86 days of inactivity, reviewer unresponsive, risk event history logged.
+![PR detail lodash](docs/screenshots/pr_detail_lodash.png)
+
+### Weekly Status Report — lodash/lodash
+Full digest generated from real lodash repository activity including merged and closed PRs.
+![Weekly digest lodash](docs/screenshots/weekly_digest_lodash.png)
